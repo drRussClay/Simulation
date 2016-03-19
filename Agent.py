@@ -10,7 +10,7 @@ import random
 class Agent:
     def __init__(self):
         self.ID = None
-        self.openness = round(random.uniform(-1, 1), 3)
+        self.openness = round(random.uniform(0, 1), 3)
         self.value = 75
         self.deadVal = False
         self.numTransmitted = 0

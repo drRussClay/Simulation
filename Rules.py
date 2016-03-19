@@ -19,22 +19,61 @@ class Rules:
 # --- Additional Methods        
          
     def gameResult(self, posVal, avoidVal):
-        agent1 = self.pair[0]
-        agent2 = self.pair[1]
+        if self.pair[0]["Family"] == self.pair[1]["Family"]:
+            newResult = self.famInteract(posVal, avoidVal)
+        else:
+            if self.pair[0]["Group"] == self.pair[1]["Group"]:
+                newResult = self.ingroupInteract(posVal, avoidVal)
+            else: newResult = self.outgroupInteract(posVal, avoidVal)
         
-        p1Play = .5
-        p2Play = .5
-        randSeed = random.random()
+        return newResult
         
-        if (p1Play < randSeed):
+    def famInteract(self, posVal, avoidVal):
+        randSeed = random.uniform(0,1)
+        
+        p1Interact = .95 + (self.pair[0]["Agent"].getOpenness() * .05)
+        p2Interact = .95 + (self.pair[1]["Agent"].getOpenness() * .05)
+        
+        if (p1Interact < randSeed):
             newResult=self.avoidResult(avoidVal)
         else: 
-            if(p2Play < randSeed):
+            if(p2Interact < randSeed):
                 newResult=self.avoidResult(avoidVal)
             else: newResult=self.interactResult(posVal)
-                
-        return newResult
-    
+            
+        return newResult        
+        
+    def ingroupInteract(self, posVal, avoidVal):
+        randSeed = random.uniform(0,1)
+        
+        p1Interact = .75 + (self.pair[0]["Agent"].getOpenness() * .25)
+        p2Interact = .75 + (self.pair[1]["Agent"].getOpenness() * .25)
+        
+        if (p1Interact < randSeed):
+            newResult=self.avoidResult(avoidVal)
+        else: 
+            if(p2Interact < randSeed):
+                newResult=self.avoidResult(avoidVal)
+            else: newResult=self.interactResult(posVal)
+            
+        return newResult 
+        
+        
+    def outgroupInteract(self, posVal, avoidVal):
+        randSeed = random.uniform(0,1)
+        
+        p1Interact = self.pair[0]["Agent"].getOpenness() 
+        p2Interact = self.pair[1]["Agent"].getOpenness() 
+        
+        if (p1Interact < randSeed):
+            newResult=self.avoidResult(avoidVal)
+        else: 
+            if(p2Interact < randSeed):
+                newResult=self.avoidResult(avoidVal)
+            else: newResult=self.interactResult(posVal)
+            
+        return newResult 
+        
     def avoidResult(self, avoidVal):
         avoid1=random.gauss(avoidVal, .1)
         avoid2=random.gauss(avoidVal, .1)
