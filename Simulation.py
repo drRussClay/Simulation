@@ -149,7 +149,7 @@ class Simulation:
                     newInt = Interaction(agent1, agent2)
                     deadCheck = newInt.deadCheck()                           
                 newInt.setStartVals()
-                newRule = Rules([agent1, agent2])
+                newRule = Rules([vert1, vert2])
                 
                 newResult = newRule.gameResult(self.meanPosVal, self.meanAvoidVal)
                 if newResult[0] == "Avoid":
