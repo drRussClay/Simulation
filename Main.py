@@ -9,13 +9,16 @@ from Export import Export
 import os
 import csv
 
+# declare the number of simulations to run and the number to assign to the first
+# simulation log file (files will increment sequentially from the first number)
 numSims = 1
 startNumber = 0
 simLog = []
 
+# define the format of the output file for summary information from each simulation run
 def writeSimLog(simLog, startNumber):
-    popStatVals = ["SimNumber", "StartPopSize", "IntsPerTime", "PosVal", "AvoidVal", "SickVal", "SickTime", 
-                   "DisRisk", "DisTransRate", "ImmuneProb", "NumDied", "NumImmune"]
+    popStatVals = ["SimNumber", "StartPopSize", "InitialConnections", "PosVal", "AvoidVal", "SickVal", "SickTime", 
+                  "DisTransRate", "ImmuneProb", "NumDied", "NumImmune"]
      
     os.chdir('C:/Users/russ.clay/Desktop/Simulations/Agent/Exports')
     with open('simulationLogData.csv', 'wb') as csvfile:
@@ -34,6 +37,7 @@ def writeSimLog(simLog, startNumber):
 
 # --------------------------------------------------------
 # main code body
+# create a new simulation, run it, and create all necessary output files for each simulation run
 
 for i in range(startNumber, numSims+startNumber):
     newSim = Simulation(i)
@@ -43,10 +47,9 @@ for i in range(startNumber, numSims+startNumber):
     newExport = Export(newSim)
     newExport.writeTimeLog(i)
     newExport.writeFinalPopulation(i)
-    newExport.writeInteractions()
-    newExport.writeMatrix(i)
     print('Finished Simulation ' + str(i))
-    
+
+#write the summary file for all simulation runs 
 writeSimLog(simLog, startNumber)
 
 

@@ -7,31 +7,31 @@ Created on Thu Jan 14 11:15:33 2016
 from Agent import Agent
 import igraph
 import random
+import os
 
 
 class Population:
     "The Population class defines and updates a population of agents"
     
-    def __init__(self, popLimit, dRisk, iProb, disease, xConnects, minFam, maxFam, igConnectLow, igConnectHigh):
-        self.agents = igraph.Graph(directed = False)
-        self.minFam = minFam
-        self.maxFam = maxFam
-        self.igConnectLow = igConnectLow
-        self.igConnectHigh = igConnectHigh
-        self.dRisk = dRisk
-        self.iProb = iProb
-        self.disease = disease
-        self.popLimit = popLimit
-        self.popSize = 0
-        self.numFamilies = 0
-        self.initialSick = None
-        self.initialImmune = None
-        self.finalSick = None
-        self.finalImmune = None
-        self.numDied = None
-        self.initialGraph = None
-        self.xConnects = xConnects
-        self.families = []
+    def __init__(self, popLimit, iProb, disease, xConnects, minFam, maxFam, igConnectLow, igConnectHigh):
+        self.agents = igraph.Graph(directed = False) # initialize a graph that will hold the population of agents
+        self.minFam = minFam # sets the minimum number of agents in a family (recieved from Class:Simulation)
+        self.maxFam = maxFam # sets the maximum number of agents in a family (recieved from Class:Simulation)
+        self.igConnectLow = igConnectLow # sets the minimum number of ingroup connections (recieved from Class:Simulation)
+        self.igConnectHigh = igConnectHigh # sets the maximum number of ingroup connections (recieved from Class:Simulation)
+        self.iProb = iProb # sets the probability that any agent is naturally immune to disease
+        self.disease = disease # holds an instance of Class:Disease that can infect agents in the population
+        self.popLimit = popLimit # sets the maximum size of the population
+        self.popSize = 0 # holds the current size of the population
+        self.numInfected = None # holds the current number of infected individuals
+        self.numFamilies = 0 # holds the current number of families in the population
+        self.initialSick = None # captures the number of agents with disease in the population at time 0
+        self.initialImmune = None # captures the number of agents immune to disease at time 0
+        self.finalSick = None # captures the number of agents with disease at the end of the simulation
+        self.finalImmune = None # captures the number of agents with immunity at the end of the simulation
+        self.numDied = None # holds the number of agents that died during the simulation
+        self.xConnects = xConnects # holds the number of cross-group connections that will be generated each time period
+        self.families = [] # holds a list of the families in the simulation (families are lists of agents)
         
 # --- Accessor Functions
                
@@ -59,10 +59,7 @@ class Population:
         
     def getIGConnectHigh(self):
         return self.igConnectHigh
-        
-    def get_dRisk(self):
-        return self.dRisk
-    
+           
     def get_iProb(self):
         return self.iProb
         
@@ -71,6 +68,9 @@ class Population:
                       
     def getSize(self):
         return self.popSize
+        
+    def getNumInfected(self):
+        return self.numInfected
         
     def getPopLimit(self):
         return self.popLimit
@@ -95,62 +95,59 @@ class Population:
         
     def getMaxConnects(self):
         return self.maxConnects
-        
-    def getInitialGraph(self):
-        return self.initialGraph
-              
-                        
-# --- Additional Functions
+
+#--------------------                        
+# --- Class Functions
+#--------------------
+
     def setPop(self):
-        
         self.addFamilies()
         self.addIngroupConnects()
         self.addOutgroupConnects()
-            
     
-    def addFamilies(self):
-        
-        while self.popSize < self.popLimit:
-            if len(self.agents.vs) == 0:
-                startVert = 0
-            else: startVert = len(self.agents.vs)
-            
+    def addFamilies(self):    
+        while self.popSize < self.popLimit: # create new agents in bundles of families while the population is less than the maximum size
+            startVert = len(self.agents.vs)            
             popLeft = self.popLimit - self.popSize
             newVerts = random.randint(self.minFam, self.maxFam)
+            
+            # ensure that the final family group added does not exceed the maximum population size
             if newVerts < popLeft:
                 addVerts = newVerts
             else: addVerts = popLeft
-              
+            
+            #create new set of verticies that will represent a family in the pouplation
             self.agents.add_vertices(addVerts)
             endVert = len(self.agents.vs)
             newFam = []
             groupNum = random.randint(1,2)
             
+            # initialize instances of Class:Agent to be stored at each vertex, and assign necessary properties to each agent / vertex
             for i in range(startVert, endVert):
                 newAgent = Agent()
-                newAgent.setDisease(self.dRisk, self.disease, self.iProb)
-                newAgent.setID(i)
-                self.agents.vs(i)["Agent"] = newAgent
-                self.agents.vs(i)["Index"] = str(i)
-                self.agents.vs(i)["Status"] = "H"
-                self.agents.vs(i)["Family"] = str(self.numFamilies)
+                newAgent.setID(i) # unique ID for each agent
+                self.agents.vs(i)["Agent"] = newAgent # store the agent at the vertex
+                self.agents.vs(i)["Index"] = str(i) # create a string representation of the unique ID for logging and reporting
+                self.agents.vs(i)["Status"] = "H" # set the current disease status of the agent to 'H' (Healthy)
+                self.agents.vs(i)["Family"] = str(self.numFamilies) # set an identifier of the family that the agent belongs to (family number increments with each new group created)
+                # designate the agent as a member of 'Group A' or 'Group B' based on the randomly generated number above                
                 if groupNum == 1:
                     self.agents.vs(i)["Group"] = "A"
                 else: self.agents.vs(i)["Group"] = "B"
                 newFam.append(i)
-                print "Added agent " + str(i)
-                
+#                print "Added agent " + str(i) #debugging                
             
+            # Create connections between all members of the family and designate those as family connections
             for i in range(startVert, endVert-1):
                 for j in range(i+1, endVert):
                     self.agents.add_edge(i, j)
                     self.agents.es(len(self.agents.es)-1)["Relation"] = "Family"
                     
-            self.families.append(newFam)             
-            self.numFamilies+=1
-            self.popSize += addVerts
+            self.families.append(newFam) # store the family in the family list            
+            self.numFamilies+=1 # update the total number of families in the population
+            self.popSize += addVerts # update the total number of agents in the population
             
-    def addIngroupConnects(self):
+    def addIngroupConnects(self): # create connections between ingroup members
         groupA = self.agents.vs.select(Group_eq = "A")
         groupB = self.agents.vs.select(Group_eq = "B")
         
@@ -172,6 +169,7 @@ class Population:
                     else: exists = False            
                     
                 self.agents.add_edge(i, groupA[newConnect])
+                self.agents.es(len(self.agents.es)-1)["Relation"] = "Ingroup"
                 j += 1
                 
         for i in groupB:
@@ -192,15 +190,15 @@ class Population:
                     else: exists = False            
                     
                 self.agents.add_edge(i, groupB[newConnect])
+                self.agents.es(len(self.agents.es)-1)["Relation"] = "Ingroup"
                 j += 1
                         
-    def addOutgroupConnects(self):
-        
+    def addOutgroupConnects(self): # add random connections between members of different groups     
         groupA = self.agents.vs.select(Group_eq = "A")
         groupB = self.agents.vs.select(Group_eq = "B")
-        
         counter = 0
         
+        # add connections until the number of desired connections is reached
         while counter < self.xConnects:
             exists = True
             while exists:
@@ -211,7 +209,13 @@ class Population:
                 else: exists = False
                 
             self.agents.add_edge(groupA[vertA], groupB[vertB])
+            self.agents.es(len(self.agents.es)-1)["Relation"] = "Outgroup"
             counter += 1
+            
+    def clearOutgroupConnects(self):  # clear outgroup connections (used at the beginning of each time period so that different, randomly generated outcroup connections occur throughout the simulation)      
+        outgroup = self.agents.es.select(Relation_eq = "Outgroup")
+        if len(outgroup) > 0:
+            outgroup.delete() 
             
     def logStart(self):
         numSick = 0
@@ -261,6 +265,7 @@ class Population:
                 i["Agent"].value = 0
                 i["Agent"].diseaseTime = None
                 i["Status"] = "D"
+                self.popSize -= 1
                 
     def calcNumDied(self):
         self.numDied = 0
@@ -270,24 +275,34 @@ class Population:
                 
         return self.numDied
 
-    def calcRo (self):
-        numInfected = 0.0
-        numTransmitted = 0.0
-        Ro = None
-        for i in self.agents.vs:
-            if i["Agent"].getDisease() == True:
-                numInfected  = numInfected + 1
-                numTransmitted = numTransmitted + i["Agent"].getNumTransmitted()
-                Ro = round(float(numTransmitted) / float(numInfected), 3)
-        return Ro 
+    def calcRo (self, priorInfected):
+        if priorInfected == 0:
+            return 0
+        else:
+            numInfected = 0.0
+            Ro = None
+            for i in self.agents.vs:
+                if i["Agent"].getDisease() == True:
+                    numInfected += 1
+            newCases = numInfected - priorInfected
+                            
+            Ro = round(float(newCases) / float(priorInfected), 3)
+            return Ro 
         
-    def createInitialGraph(self):
+    def clearTransmissions(self):
+        for i in self.agents.vs:
+            i["Agent"].numTransmitted = 0
+        
+    def createGraph(self, timePeriod):
         self.agents.vs["label"] = self.agents.vs["Group"]
         color_dict = {"H": "blue", "S": "green", "D": "red", "I": "yellow"}
         self.agents.vs["color"] = [color_dict[Status] for Status in self.agents.vs["Status"]]
         layout = self.agents.layout("kk")
         matrixPlot = igraph.plot(self.agents, layout = layout, bbox = (600, 600), margin = 20)
-        self.initialGraph = matrixPlot
+        
+        os.chdir('C:/Users/russ.clay/Desktop/Simulations/Agent/Images')
+        filename = 'NetworkPlot_' + str(timePeriod) + '.png'
+        matrixPlot.save(filename)
 
         
 

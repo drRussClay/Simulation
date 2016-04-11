@@ -44,8 +44,7 @@ class Interaction:
         else: return False
    
        
-    def setStartVals(self):
-                
+    def setStartVals(self):                
         self.agent1StartVal = self.agent1.getValue()
         self.agent2StartVal = self.agent2.getValue()
         
