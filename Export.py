@@ -9,7 +9,6 @@ Created on Sat Jan 16 14:49:30 2016
 
 import os
 import csv
-import igraph
 
 class Export:
     def __init__(self, simulation):
@@ -24,29 +23,41 @@ class Export:
         with open('interactionData.csv', 'wb') as csvfile:
             datawriter = csv.writer(csvfile, delimiter=',',
                                     quotechar='|', quoting=csv.QUOTE_MINIMAL)
-            firstRow = ["TimeNum", "IntNum", "FirstAgent", "FirstAgentAvers", "FirstAgentStartVal",
-                        "FirstAgentChange", "FirstAgentEndVal", "SecondAgent", "SecondAgentAvers", 
-                        "SecondAgentStartVal", "SecondAgentChange", "SecondAgentEndVal", "IntResult"]  
+            firstRow = ["TimeNum", "IntNum", "Agent1", "Agent1-Openness", "Agent1-Family",
+                        "Agent1-Group", "Agent1-StartVal", "Agent1-Change", "Agent1-EndVal", 
+                        "Agent2", "Agent2-Openness", "Agent2-Family", "Agent2-Group", "Agent2-StartVal", 
+                        "Agent2-Change", "Agent2-EndVal", "IntResult", "IntType"]  
             datawriter.writerow(firstRow)
             
             for i in range(0, len(self.interactions)):
                 timeNum = self.interactions[i][0]
                 intNum = self.interactions[i][1]
-                firstAgent = self.interactions[i][2].getAgent1()
-                secondAgent = self.interactions[i][2].getAgent2()
+                interaction = self.interactions[i][2]
+                vertPair = self.interactions[i][3]
+                result = self.interactions[i][4]
+                intType = self.interactions[i][5]
+                
+                firstAgent = interaction.getAgent1()
+                secondAgent = interaction.getAgent2()
                 position1 = str(firstAgent.getID())
                 position2 = str(secondAgent.getID())
-                a1StartVal = self.interactions[i][2].getAgent1StartVal()
-                a2StartVal = self.interactions[i][2].getAgent2StartVal()
-                a1EndVal = self.interactions[i][2].getAgent1EndVal()
-                a2EndVal = self.interactions[i][2].getAgent2EndVal()
-                result = self.interactions[i][4][0]
-                agent1Change = self.interactions[i][4][1]
-                agent2Change = self.interactions[i][4][2]
+                a1Openness = firstAgent.getOpenness()
+                a2Openness = secondAgent.getOpenness()
+                a1Family = vertPair[0]["Family"]
+                a2Family = vertPair[1]["Family"]
+                a1Group = vertPair[0]["Group"]
+                a2Group = vertPair[1]["Group"]
+                a1StartVal = interaction.getAgent1StartVal()
+                a2StartVal = interaction.getAgent2StartVal()
+                a1EndVal = interaction.getAgent1EndVal()
+                a2EndVal = interaction.getAgent2EndVal()
+                intResult = result[0]
+                agent1Change = result[1]
+                agent2Change = result[2]
                 
-                newRow = [timeNum, intNum, position1, firstAgent.getOpenness(), a1StartVal,
-                          agent1Change, a1EndVal, position2, secondAgent.getOpenness(),
-                          a2StartVal, agent2Change, a2EndVal, result]
+                newRow = [timeNum, intNum, position1, a1Openness, a1Family, a1Group, a1StartVal,
+                          agent1Change, a1EndVal, position2, a2Openness, a2Family, a2Group,
+                          a2StartVal, agent2Change, a2EndVal, intResult, intType]
                 datawriter.writerow(newRow)
 
     def writeTimeLog(self, simNum):
@@ -67,12 +78,14 @@ class Export:
             datawriter = csv.writer(csvfile, delimiter=',',
                                     quotechar='|', quoting=csv.QUOTE_MINIMAL)
                                     
-            firstRow = ["ID", "Openness", "Value", "SickVal", "DeadVal",
+            firstRow = ["ID", "Family", "Group", "Openness", "Value", "SickVal", "DeadVal",
                         "Disease", "DiseaseTime", "Immunity"]
             datawriter.writerow(firstRow) 
-            
-            for i in self.population.getVS():
+                 
+            for i in self.population.agents.vs:
                 tempAgent = i["Agent"]
+                family = i["Family"]
+                group = i["Group"]
                 ID = tempAgent.getID()
                 opn = tempAgent.getOpenness()
                 val = tempAgent.getValue()
@@ -84,18 +97,10 @@ class Export:
                 dtm = tempAgent.getDiseaseTime()
                 imm = tempAgent.getImmunity()
                 
-                newRow = [ID, opn, val, sck, ded, dis, dtm, imm]
+                newRow = [ID, family, group, opn, val, sck, ded, dis, dtm, imm]
                 datawriter.writerow(newRow)
+
                 
-    def writeMatrix(self, simNum):
-        
-        os.chdir('C:/Users/russ.clay/Desktop/Simulations/Agent/Images')
-        self.population.initialGraph.save('StartingNetworkPlot.png')
-        self.population.agents.vs["label"] = self.population.agents.vs["Group"]
-        color_dict = {"H": "blue", "S": "green", "D": "red", "I": "yellow"}
-        self.population.agents.vs["color"] = [color_dict[Status] for Status in self.population.agents.vs["Status"]]
-        layout = self.population.agents.layout("fr")
-        matrixPlot = igraph.plot(self.population.agents, layout = layout, bbox = (600, 600), margin = 20)
-        matrixPlot.save('EndingNetworkPlot.png')
+
                 
                 

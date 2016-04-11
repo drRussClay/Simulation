@@ -16,10 +16,10 @@ class Agent:
         self.numTransmitted = 0
         self.numConnections = 3 #round(random.gauss(100.00, 21.45)) # should ensure that 99% of the population has a number of connections below 150 (the Dunbar number)
         self.connections = None
-        self.disease = None
+        self.disease = False
         self.diseaseType = None
         self.diseaseTime = None
-        self.immunity = None
+        self.immunity = False
           
 # --- Accessor Functions
     def getID(self):
@@ -68,39 +68,15 @@ class Agent:
                 self.connections.append(newConnect)
             else: pass
                 
-    def setDisease(self, dRisk, disease, natImmune):
-        d = round(random.random(), 3)
-        i = round(random.random(), 3)
+    def setDisease(self, disease):
+        self.disease = True
+        self.diseaseType = disease
+        self.diseaseTime = 0   
         
-        if (d < dRisk):
-            self.disease = True
-            self.diseaseType = disease
-            self.diseaseTime = 0
-        else: 
-            self.disease = False
-            self.diseaseType = None
-            self.diseaseTime = None
-
-        if (i < natImmune):
-            self.immunity = True
-        else: self.immunity = False
-        
-
-        
-    def updateDisease(self, agent, newVal):
-        if self.immunity:
-            self.disease = False
-            self.diseaseTime = None
-            self.updateValue(newVal)
-            return 0
-        else: return self.noImmunity(agent, newVal)
-
-    def noImmunity(self, agent, newVal):
+    def noImmunity(self, agent):
         if not(self.disease):
-            return self.checkIntPartner(agent, newVal)
-        else: 
-            self.updateValue(newVal)
-            return 0
+            return self.checkIntPartner(agent)
+        else: return False
     
     def checkDiseaseTime(self):
         if self.diseaseTime > self.diseaseType.getSickTime():
@@ -109,23 +85,23 @@ class Agent:
             self.diseaseTime = None
         else: self.updateValue(self.diseaseType.getSickValue())
     
-    def checkIntPartner(self, agent, newVal):
+    def checkIntPartner(self, agent):
         if agent.getDisease():
             diseaseType = agent.getDiseaseType()
             randVal = random.random()
             if randVal < diseaseType.getTransRate():
-                self.disease = True
-                self.diseaseType = diseaseType
-                self.diseaseTime = 0
-                self.updateValue(self.diseaseType.getSickValue())
-                agent.numTransmitted = agent.numTransmitted + 1
-                return True
-            else: 
-                self.updateValue(newVal)
-                return False
-        else: 
-            self.updateValue(newVal)
+                newDiseaseBundle = [self.ID, diseaseType]
+                agent.numTransmitted += 1
+                return newDiseaseBundle
+            else: return False
+        else: return False
+            
+    def updateDisease(self, agent):
+        if self.immunity:
+            self.disease = False
+            self.diseaseTime = None
             return False
+        else: return self.noImmunity(agent)
         
     def updateValue(self, newVal):
         if newVal < 0:
